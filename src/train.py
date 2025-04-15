@@ -107,9 +107,30 @@ def load_full_dataset(data_folder):
 # === Load data ===
 windows, labels, group_ids = load_full_dataset('data')
 
+from scipy.signal import welch
+
+rest_windows = windows[labels == 0][:5]  # Just a few samples
+move_windows = windows[labels == 1][:5]
+
+for i in range(3):  # C3, Cz, C4
+    f, pxx_rest = welch(rest_windows[:, :, i], fs=1000, axis=1)
+    f, pxx_move = welch(move_windows[:, :, i], fs=1000, axis=1)
+    
+    plt.figure()
+    plt.semilogy(f, np.mean(pxx_rest, axis=0), label='Rest')
+    plt.semilogy(f, np.mean(pxx_move, axis=0), label='Movement')
+    plt.title(f'Power Spectrum Channel {i}')
+    plt.xlabel("Frequency (Hz)")
+    plt.ylabel("Power")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f'results/rest_move{i}.png')
+    plt.close()
+
+
 # === Compute CSP filters ===
 print("Computing CSP filters...")
-csp_filters = compute_csp(windows, labels, n_components=4)
+csp_filters = compute_csp(windows, labels, n_components=8)
 np.save('results/csp_filters.npy', csp_filters)
 print("CSP filters saved to 'results/csp_filters.npy'")
 
@@ -118,6 +139,22 @@ print("Extracting advanced features with CSP...")
 features = extract_features(windows, csp_filters=csp_filters)
 print(f"Extracted feature shape: {features.shape}")
 print("Feature sample (first row):", features[0])
+
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+pca = PCA(n_components=2)
+reduced = pca.fit_transform(features)
+
+plt.figure(figsize=(6, 6))
+plt.scatter(reduced[:, 0], reduced[:, 1], c=labels, cmap='coolwarm', alpha=0.6)
+plt.title("PCA of Extracted Features")
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.grid(True)
+plt.savefig(f'results/PCA.png')
+plt.close()
+
 
 # === Feature scaling ===
 print("Scaling features...")
@@ -136,17 +173,15 @@ class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(
 class_weight_dict = dict(enumerate(class_weights))
 print("Calculated class weights:", class_weight_dict)
 
-# === Build model ===
-model = build_cnn_model(input_shape=(features_expanded.shape[1], 1))
-
 # === Callbacks ===
 callbacks = [
     get_lr_scheduler(),
     get_early_stopping()
 ]
 
+
 # === Group-aware cross-validation ===
-gkf = GroupKFold(n_splits=3)
+gkf = GroupKFold(n_splits=3)  # Adjust splits based on number of subjects
 histories = []
 
 for fold, (train_idx, test_idx) in enumerate(gkf.split(features_expanded, labels, groups=group_ids)):
@@ -157,15 +192,16 @@ for fold, (train_idx, test_idx) in enumerate(gkf.split(features_expanded, labels
     X_train, X_test = features_expanded[train_idx], features_expanded[test_idx]
     y_train, y_test = labels[train_idx], labels[test_idx]
 
-    # Rebuild model for each fold (important!)
+    # === Build CNN model ===
     model = build_cnn_model(input_shape=(features_expanded.shape[1], 1))
+
 
     history = model.fit(
         X_train, y_train,
         epochs=50,
-        batch_size=64,
+        batch_size=32,
         validation_data=(X_test, y_test),
-        callbacks=callbacks,
+        callbacks=[callbacks],
         class_weight=class_weight_dict,
         verbose=1
     )
@@ -175,6 +211,7 @@ for fold, (train_idx, test_idx) in enumerate(gkf.split(features_expanded, labels
     preds = model.predict(X_test).argmax(axis=1)
     print(classification_report(y_test, preds))
 
+    # Confusion matrix
     cm = confusion_matrix(y_test, preds)
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
     plt.title(f'Confusion Matrix Fold {fold + 1}')
@@ -183,14 +220,11 @@ for fold, (train_idx, test_idx) in enumerate(gkf.split(features_expanded, labels
     plt.savefig(f'results/confusion_matrix_fold_{fold + 1}.png')
     plt.close()
 
-    # Save fold history plot
-    plot_history(history, fold=fold + 1)
-
 # === Save final model ===
 model.save('results/model.h5')
 print("✅ Model saved to 'results/model.h5'")
 
-# === Save aggregated training accuracy plot ===
+# === Plot training history ===
 print("Saving training history...")
 plt.figure(figsize=(10, 5))
 for i, history in enumerate(histories):

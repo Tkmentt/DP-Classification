@@ -122,6 +122,7 @@ def parse_marker_file(marker_file_path):
 
     event_mapping = {
         "S6": 0,
+        "S3": 0,
         "S4": 1,
         "S5": 1
     }
@@ -151,24 +152,19 @@ def parse_marker_file(marker_file_path):
     return intervals
 
 
-def is_artifact_free(window, motor_threshold=70, frontal_threshold=300):
+def is_artifact_free(window, motor_threshold=70):
+    """
+    Check if all channels (Cz, C3, C4) in the window are below the motor threshold.
+    """
     peak_to_peak = np.ptp(window, axis=0)
+    channel_names = ['Cz', 'C3', 'C4']
 
-    channel_names = ['Fp1', 'Fp2', 'Cz', 'C3', 'C4']
     for i, value in enumerate(peak_to_peak):
-        threshold = frontal_threshold if i < 2 else motor_threshold
-        if value > threshold:
+        if value > motor_threshold:
             print(f"⚠️ Channel {channel_names[i]} exceeds threshold: {value:.2f} μV")
 
+    return np.all(peak_to_peak < motor_threshold)
 
-    motor_channels = peak_to_peak[2:]  # Cz, C3, C4
-    frontal_channels = peak_to_peak[:2]  # Fp1, Fp2
-
-
-    motor_clean = np.all(motor_channels < motor_threshold)
-    frontal_clean = np.all(frontal_channels < frontal_threshold)
-
-    return motor_clean and frontal_clean
 
 
 
@@ -219,7 +215,7 @@ def generate_sliding_windows(eeg_data, timestamps, intervals, window_size=2, ste
             window = eeg_data[current_idx:current_idx + window_samples]
 
             # === Check for artifacts ===
-            if is_artifact_free(window, motor_threshold=70, frontal_threshold=200):
+            if is_artifact_free(window, motor_threshold=70):
                 windows.append(window)
                 labels.append(label)
             else:

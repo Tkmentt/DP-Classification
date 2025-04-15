@@ -1,40 +1,36 @@
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv1D, BatchNormalization, Activation, Dropout, GlobalAveragePooling1D, Dense, Input
+from tensorflow.keras.layers import Conv1D, BatchNormalization, Activation, Dropout, Flatten,GlobalAveragePooling1D, Dense, Input
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping
 from tensorflow.keras import regularizers
 
-def build_cnn_model(input_shape, learning_rate=0.001, l2_reg=0.001):
+def build_cnn_model(input_shape, learning_rate=0.001):
     model = Sequential()
     model.add(Input(shape=input_shape))
 
     # Block 1
-    model.add(Conv1D(32, kernel_size=7, padding='same', kernel_regularizer=regularizers.l2(l2_reg)))
+    model.add(Conv1D(64, kernel_size=5, padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(Dropout(0.3))
 
     # Block 2
-    model.add(Conv1D(64, kernel_size=5, padding='same', kernel_regularizer=regularizers.l2(l2_reg)))
+    model.add(Conv1D(128, kernel_size=3, padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(Dropout(0.4))
 
     # Block 3
-    model.add(Conv1D(128, kernel_size=3, padding='same', kernel_regularizer=regularizers.l2(l2_reg)))
+    model.add(Conv1D(256, kernel_size=3, padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
 
-    # Global average pooling instead of flattening
-    model.add(GlobalAveragePooling1D())
-
-    # Dense block
-    model.add(Dense(64, activation='relu', kernel_regularizer=regularizers.l2(l2_reg)))
+    # Classification head
+    model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
-
-    # Output layer
     model.add(Dense(2, activation='softmax'))
 
     # Compile the model
@@ -49,7 +45,7 @@ def get_lr_scheduler():
 
 # Optional: Early stopping (you can add this to your callbacks in train.py!)
 def get_early_stopping():
-    return EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True, verbose=1)
+    return EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True, verbose=1)
 
 """ OLD MODEL
 def build_cnn_model(input_shape, learning_rate=0.001):
