@@ -5,9 +5,9 @@ from sklearn.model_selection import GroupKFold
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
-from preprocessing.preprocessing import parse_marker_file, generate_sliding_windows, extract_features
+from preprocessing.preprocessing_better import parse_marker_file, generate_sliding_windows, extract_features
 from classification.keras.CNN import build_cnn_model, get_lr_scheduler, get_early_stopping
-from preprocessing.preprocessing import compute_csp, extract_features, balance_classes
+from preprocessing.preprocessing_better import compute_csp, extract_features, balance_classes, print_class_balance
 import datetime
 import os
 import joblib
@@ -41,16 +41,6 @@ def plot_history(history, fold=None):
     else:
         plt.show()
 
-# === Utility to print class balance ===
-def print_class_balance(labels, title="Class balance"):
-    counts = np.bincount(labels)
-    total = len(labels)
-    print(f"{title}:")
-    for idx, count in enumerate(counts):
-        percentage = 100 * count / total
-        print(f"  Class {idx}: {count} samples ({percentage:.2f}%)")
-    print("")
-
 # === Load full dataset with group IDs ===
 def load_full_dataset(data_folder):
     all_windows, all_labels, all_group_ids = [], [], []
@@ -76,6 +66,13 @@ def load_full_dataset(data_folder):
         data = data[~np.isnan(data[:, -3])]  # Remove NaN timestamps
 
         eeg_data = data[:, [3, 4, 5]]  # Fp1, Fp2, Cz, C3, C4
+        # === Convert to microvolts based on OpenBCI gain
+        GAIN = 24
+        ADC_RESOLUTION = 2**23 - 1
+        V_REF = 4.5  # Volts
+        scale_uV = (V_REF / ADC_RESOLUTION) * 1e6 / GAIN  # µV per count
+        eeg_data = eeg_data * scale_uV  # Convert to µV
+        
         timestamps_raw = data[:, -3]
         timestamps = [datetime.datetime.fromtimestamp(ts) for ts in timestamps_raw]
 

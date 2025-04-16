@@ -3,32 +3,20 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.preprocessing import StandardScaler
-from sklearn.utils.class_weight import compute_class_weight
-from tensorflow.keras.callbacks import EarlyStopping
-from preprocessing.preprocessing import parse_marker_file, generate_sliding_windows, balance_classes
-from classification.keras.CNNTransformerLSTM import build_cnn_bilstm_model
+from preprocessing.preprocessing_better import parse_marker_file, generate_sliding_windows,  balance_classes, print_class_balance
+from classification.keras.CNN import build_cnn_model, get_lr_scheduler, get_early_stopping
 import datetime
 import os
-import joblib
+from sklearn.metrics import classification_report, confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-# === Create results folder if it does not exist ===
-os.makedirs('results', exist_ok=True)
+# === Create results folder ===
+os.makedirs('resultsRAW', exist_ok=True)
 
-def print_class_balance(labels, title="Class balance"):
-    counts = np.bincount(labels)
-    total = len(labels)
-    print(f"{title}:")
-    for idx, count in enumerate(counts):
-        percentage = 100 * count / total
-        print(f"  Class {idx}: {count} samples ({percentage:.2f}%)")
-    print("")
-
-# === Load full raw dataset with group IDs ===
+# === Load full dataset with group IDs ===
 def load_full_dataset(data_folder):
-    all_windows = []
-    all_labels = []
-    all_group_ids = []
+    all_windows, all_labels, all_group_ids = [], [], []
     group_counter = 0
 
     print(f"\n🔍 Loading full dataset from folder: {data_folder}")
@@ -47,31 +35,40 @@ def load_full_dataset(data_folder):
 
         print(f"✅ Loading subject: {subject_folder}")
 
-        # Load data
         data = np.genfromtxt(data_file, delimiter=',', comments='%')
         data = data[~np.isnan(data[:, -3])]  # Remove NaN timestamps
 
-        eeg_data = data[:, [3, 4, 5]]  # Cz, C3, C4
+        eeg_data = data[:, [3, 4, 5]]  # Cz, C3, C4 (raw ADC counts)
+        # === Convert to microvolts based on OpenBCI gain
+        GAIN = 24
+        ADC_RESOLUTION = 2**23 - 1
+        V_REF = 4.5  # Volts
+        scale_uV = (V_REF / ADC_RESOLUTION) * 1e6 / GAIN  # µV per count
+        eeg_data = eeg_data * scale_uV  # Convert to µV
+        
         timestamps_raw = data[:, -3]
         timestamps = [datetime.datetime.fromtimestamp(ts) for ts in timestamps_raw]
 
-        # Parse intervals
         intervals = parse_marker_file(label_file)
 
-        # Generate sliding windows and labels
         windows, labels = generate_sliding_windows(eeg_data, timestamps, intervals)
         print_class_balance(labels, "Class balance before balancing")
 
+        print("Label summary before balancing:")
+        print("Unique labels:", np.unique(labels))
+        print("Soft label count (0.5):", np.sum(labels == 0.5))
         windows, labels = balance_classes(windows, labels, method='oversample')
         print_class_balance(labels, "Class balance after balancing")
+        print("Label summary after balancing:")
+        print("Unique labels:", np.unique(labels))
+        print("Soft label count (0.5):", np.sum(labels == 0.5))
 
         group_ids = np.full(len(labels), group_counter)
+        group_counter += 1
 
         all_windows.append(windows)
         all_labels.append(labels)
         all_group_ids.append(group_ids)
-
-        group_counter += 1
 
     combined_windows = np.vstack(all_windows)
     combined_labels = np.concatenate(all_labels)
@@ -82,82 +79,59 @@ def load_full_dataset(data_folder):
 
     return combined_windows, combined_labels, combined_group_ids
 
-# === Load data ===
-windows, labels, group_ids = load_full_dataset('data')
 
-# === Scale raw EEG windows ===
-print("Scaling raw EEG windows...")
-scaler = StandardScaler()
-# Flatten for scaler
-windows_flat = windows.reshape(-1, windows.shape[-1])
-windows_scaled = scaler.fit_transform(windows_flat)
-# Reshape back
-windows_scaled = windows_scaled.reshape(windows.shape)
-joblib.dump(scaler, 'results/scaler.pkl')
-print("Scaler saved to 'results/scaler.pkl'")
 
-# === Prepare input shape ===
-print(f"Input shape for CNN-BiLSTM: {windows_scaled.shape}")
+# === Load raw windows and labels ===
+windows, labels, group_ids = load_full_dataset('dataALL')
 
-# === Calculate class weights ===
-class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(labels), y=labels)
-class_weight_dict = dict(enumerate(class_weights))
-print("Calculated class weights:", class_weight_dict)
+# === Prepare GroupKFold ===
+n_splits = 3
+gkf = GroupKFold(n_splits=n_splits)
+folds = list(gkf.split(windows, labels, groups=group_ids))
+print(f"\n🔁 Prepared {n_splits}-fold GroupKFold splits.")
 
-# === Build CNN-BiLSTM model ===
-model = build_cnn_bilstm_model(input_shape=(windows_scaled.shape[1], windows_scaled.shape[2]))
+# === Iterate through folds ===
+for fold_idx, (train_idx, test_idx) in enumerate(folds):
+    print(f"\n🔍 Fold {fold_idx + 1}/{n_splits}")
 
-# === Group-aware cross-validation ===
-gkf = GroupKFold(n_splits=5)
-histories = []
+    # Split raw EEG
+    X_train_raw = windows[train_idx]
+    X_test_raw = windows[test_idx]
 
-for fold, (train_idx, test_idx) in enumerate(gkf.split(windows_scaled, labels, groups=group_ids)):
-    print(f"\n🔍 Fold {fold + 1}/{gkf.get_n_splits()}")
-    print_class_balance(labels[train_idx], title="Train class balance")
-    print_class_balance(labels[test_idx], title="Test class balance")
+    # Split labels
+    y_train = labels[train_idx]
+    y_test = labels[test_idx]
 
-    X_train, X_test = windows_scaled[train_idx], windows_scaled[test_idx]
-    y_train, y_test = labels[train_idx], labels[test_idx]
+    # Convert soft labels to one-hot
+    y_train_cat = np.stack([1 - y_train, y_train], axis=1)
+    y_test_cat = np.stack([1 - y_test, y_test], axis=1)
 
-    early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-
-    history = model.fit(
-        X_train, y_train,
+    # Build and train CNN
+    cnn_model = build_cnn_model(input_shape=(X_train_raw.shape[1], X_train_raw.shape[2]))
+    cnn_model.fit(
+        X_train_raw, y_train_cat,
+        validation_data=(X_test_raw, y_test_cat),
         epochs=50,
         batch_size=32,
-        validation_data=(X_test, y_test),
-        callbacks=[early_stop],
-        class_weight=class_weight_dict,
+        callbacks=[get_lr_scheduler(), get_early_stopping()],
         verbose=1
     )
-    histories.append(history)
 
-    preds = model.predict(X_test).argmax(axis=1)
-    print(classification_report(y_test, preds))
+    # Predict and evaluate only on hard labels
+    cnn_probs = cnn_model.predict(X_test_raw)
+    cnn_preds = np.argmax(cnn_probs, axis=1)
 
-    cm = confusion_matrix(y_test, preds)
+    hard_mask = (y_test == 0) | (y_test == 1)
+    y_test_hard = y_test[hard_mask].astype(int)
+    cnn_preds_hard = cnn_preds[hard_mask]
+
+    print("🧠 CNN Validation Results (Hard Labels Only):")
+    print(classification_report(y_test_hard, cnn_preds_hard, digits=3))
+
+    cm = confusion_matrix(y_test_hard, cnn_preds_hard)
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-    plt.title(f'Confusion Matrix Fold {fold + 1}')
+    plt.title(f'CNN Confusion Matrix Fold {fold_idx + 1}')
     plt.xlabel("Predicted")
     plt.ylabel("True")
-    plt.savefig(f'results/confusion_matrix_fold_{fold + 1}.png')
+    plt.savefig(f'resultsRAW/cnn_confusion_matrix_fold_{fold_idx + 1}.png')
     plt.close()
-
-# === Save final model ===
-model.save('results/model.h5')
-print("✅ Model saved to 'results/model.h5'")
-
-# === Plot training history ===
-plt.figure(figsize=(10, 5))
-for i, history in enumerate(histories):
-    plt.plot(history.history['accuracy'], label=f'Fold {i + 1} Accuracy')
-plt.title('Training Accuracy Over Folds')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy')
-plt.legend()
-plt.grid(True)
-plt.savefig('results/training_accuracy.png')
-plt.close()
-print("✅ Training history saved to 'results/training_accuracy.png'")
-
-print("\n🎉 Training completed successfully!")

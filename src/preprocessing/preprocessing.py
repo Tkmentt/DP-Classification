@@ -36,6 +36,7 @@ def print_class_balance(labels, title="Class balance"):
 def balance_classes(windows, labels, method='oversample'):
     """
     Balance the dataset using under-sampling or over-sampling.
+    Only balances hard labels (0.0 and 1.0). Soft labels (e.g. 0.5) are left untouched.
 
     Parameters:
     - windows: np.array, shape (samples, time_samples, channels)
@@ -46,7 +47,6 @@ def balance_classes(windows, labels, method='oversample'):
     - balanced_windows: np.array
     - balanced_labels: np.array
     """
-
     if method not in ['oversample', 'undersample', None]:
         raise ValueError("Method must be 'oversample', 'undersample', or None")
 
@@ -54,31 +54,36 @@ def balance_classes(windows, labels, method='oversample'):
         print("ℹ️ No class balancing applied.")
         return windows, labels
 
-    class_0_idx = np.where(labels == 0)[0]
-    class_1_idx = np.where(labels == 1)[0]
+    # Identify hard and soft labels
+    hard_0_idx = np.where(labels == 0.0)[0]
+    hard_1_idx = np.where(labels == 1.0)[0]
+    soft_idx = np.where((labels != 0.0) & (labels != 1.0))[0]
 
     if method == 'undersample':
-        n_samples = min(len(class_0_idx), len(class_1_idx))
-        class_0_selected = resample(class_0_idx, replace=False, n_samples=n_samples, random_state=42)
-        class_1_selected = resample(class_1_idx, replace=False, n_samples=n_samples, random_state=42)
-        print(f"🔄 Under-sampling to {n_samples} samples per class.")
-
+        n_samples = min(len(hard_0_idx), len(hard_1_idx))
+        hard_0_selected = resample(hard_0_idx, replace=False, n_samples=n_samples, random_state=42)
+        hard_1_selected = resample(hard_1_idx, replace=False, n_samples=n_samples, random_state=42)
+        print(f"🔄 Under-sampling to {n_samples} samples per hard class.")
     elif method == 'oversample':
-        n_samples = max(len(class_0_idx), len(class_1_idx))
-        class_0_selected = resample(class_0_idx, replace=True, n_samples=n_samples, random_state=42)
-        class_1_selected = resample(class_1_idx, replace=True, n_samples=n_samples, random_state=42)
-        print(f"🔄 Over-sampling to {n_samples} samples per class.")
+        n_samples = max(len(hard_0_idx), len(hard_1_idx))
+        hard_0_selected = resample(hard_0_idx, replace=True, n_samples=n_samples, random_state=42)
+        hard_1_selected = resample(hard_1_idx, replace=True, n_samples=n_samples, random_state=42)
+        print(f"🔄 Over-sampling to {n_samples} samples per hard class.")
 
-    # Combine and shuffle
-    selected_idx = np.concatenate([class_0_selected, class_1_selected])
+    # Combine all: hard 0, hard 1, and all soft
+    selected_idx = np.concatenate([hard_0_selected, hard_1_selected, soft_idx])
     np.random.shuffle(selected_idx)
 
     balanced_windows = windows[selected_idx]
     balanced_labels = labels[selected_idx]
 
-    print(f"✅ Classes after balancing: {np.bincount(balanced_labels)} (classes 0, 1)")
+    print(f"✅ After balancing (with soft labels):")
+    print(f"  Class 0.0: {np.sum(balanced_labels == 0.0)}")
+    print(f"  Class 1.0: {np.sum(balanced_labels == 1.0)}")
+    print(f"  Soft labels (0.5): {np.sum(balanced_labels == 0.5)}")
 
     return balanced_windows, balanced_labels
+
 
 
 
