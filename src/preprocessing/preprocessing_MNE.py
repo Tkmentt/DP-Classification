@@ -38,6 +38,60 @@ def balance_windows(windows, labels):
 
     return windows_balanced, labels_balanced
 
+def balance_classes(windows, labels, method='oversample'):
+    
+    """
+    Balance the dataset using under-sampling or over-sampling.
+    Only balances hard labels (0.0 and 1.0). Soft labels (e.g. 0.5) are left untouched.
+
+    Parameters:
+    - windows: np.array, shape (samples, time_samples, channels)
+    - labels: np.array, shape (samples,)
+    - method: str, 'oversample', 'undersample', or None
+
+    Returns:
+    - balanced_windows: np.array
+    - balanced_labels: np.array
+        """
+    
+
+    if method not in ['oversample', 'undersample', None]:
+        raise ValueError("Method must be 'oversample', 'undersample', or None")
+
+    if method is None:
+        print("ℹ️ No class balancing applied.")
+        return windows, labels
+
+    # Identify hard and soft labels
+    hard_0_idx = np.where(labels == 0.0)[0]
+    hard_1_idx = np.where(labels == 1.0)[0]
+    soft_idx = np.where((labels != 0.0) & (labels != 1.0))[0]
+
+    if method == 'undersample':
+        n_samples = min(len(hard_0_idx), len(hard_1_idx))
+        hard_0_selected = resample(hard_0_idx, replace=False, n_samples=n_samples, random_state=42)
+        hard_1_selected = resample(hard_1_idx, replace=False, n_samples=n_samples, random_state=42)
+        print(f"🔄 Under-sampling to {n_samples} samples per hard class.")
+    elif method == 'oversample':
+        n_samples = max(len(hard_0_idx), len(hard_1_idx))
+        hard_0_selected = resample(hard_0_idx, replace=True, n_samples=n_samples, random_state=42)
+        hard_1_selected = resample(hard_1_idx, replace=True, n_samples=n_samples, random_state=42)
+        print(f"🔄 Over-sampling to {n_samples} samples per hard class.")
+
+    # Combine all: hard 0, hard 1, and all soft
+    selected_idx = np.concatenate([hard_0_selected, hard_1_selected, soft_idx])
+    np.random.shuffle(selected_idx)
+
+    balanced_windows = windows[selected_idx]
+    balanced_labels = labels[selected_idx]
+
+    print(f"✅ After balancing (with soft labels):")
+    print(f"  Class 0.0: {np.sum(balanced_labels == 0.0)}")
+    print(f"  Class 1.0: {np.sum(balanced_labels == 1.0)}")
+    print(f"  Soft labels (0.5): {np.sum(balanced_labels == 0.5)}")
+
+    return balanced_windows, balanced_labels
+
 
 # === Marker Parser ===
 def parse_marker_file(marker_file_path):
@@ -249,6 +303,8 @@ def generate_sliding_windows(eeg_data, timestamps, intervals, window_size=2.0, s
 
     return np.array(windows), np.array(labels, dtype=np.float32)
 
+    return windows, labels
+
 # === Epoch Visualization ===
 def visualize_raw(raw, subject_id):
     raw.plot(duration=10.0, n_channels=3, title=f"{subject_id} — Raw EEG", show=True, block=False)
@@ -272,6 +328,8 @@ def preprocess_subject(subject_folder):
 
     eeg_filtered = raw.get_data().T
     windows, labels = generate_sliding_windows(eeg_filtered, timestamps, intervals, sfreq=SFREQ)
+    windows, labels = balance_windows(windows, labels)
+    
     csp_filters = compute_csp(windows, labels)
     features = extract_features(windows, labels, sfreq=SFREQ, csp_filters=csp_filters)
 
