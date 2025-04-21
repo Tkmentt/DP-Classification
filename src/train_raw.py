@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import GroupKFold
 from sklearn.metrics import classification_report, confusion_matrix
-from preprocessing.preprocessing_better import parse_marker_file, generate_sliding_windows,  balance_classes, print_class_balance
+from preprocessing.prep_core import parse_marker_file, generate_sliding_windows_decay,  balance_classes, print_class_balance
 from classification.keras.CNN import build_cnn_model, get_lr_scheduler, get_early_stopping
 import datetime
 import os
@@ -51,7 +51,7 @@ def load_full_dataset(data_folder):
 
         intervals = parse_marker_file(label_file)
 
-        windows, labels = generate_sliding_windows(eeg_data, timestamps, intervals)
+        windows, labels = generate_sliding_windows_decay(eeg_data, timestamps, intervals, raw=True)
         print_class_balance(labels, "Class balance before balancing")
 
         print("Label summary before balancing:")
@@ -82,10 +82,10 @@ def load_full_dataset(data_folder):
 
 
 # === Load raw windows and labels ===
-windows, labels, group_ids = load_full_dataset('dataALL')
+windows, labels, group_ids = load_full_dataset('data')
 
 # === Prepare GroupKFold ===
-n_splits = 3
+n_splits = 5
 gkf = GroupKFold(n_splits=n_splits)
 folds = list(gkf.split(windows, labels, groups=group_ids))
 print(f"\n🔁 Prepared {n_splits}-fold GroupKFold splits.")

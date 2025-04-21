@@ -5,9 +5,9 @@ from sklearn.model_selection import GroupKFold
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
-from preprocessing.preprocessing_better import parse_marker_file, generate_sliding_windows, extract_features
+from preprocessing.prep_stack import parse_marker_file, generate_sliding_windows, extract_features
 from classification.keras.CNN import build_cnn_model, get_lr_scheduler, get_early_stopping
-from preprocessing.preprocessing_better import compute_csp, extract_features, balance_classes, print_class_balance
+from preprocessing.prep_stack import compute_csp, extract_features, balance_classes, print_class_balance
 import datetime
 import os
 import joblib

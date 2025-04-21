@@ -1,33 +1,22 @@
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, log_loss
+from sklearn.metrics import classification_report, accuracy_score, log_loss
 from sklearn.neural_network import MLPClassifier
-import seaborn as sns
-import joblib
-
-# === Load features ===
-def load_all_preprocessed_features(data_folder="preprocessed_data"):
-    X_all, y_all, subjects = [], [], []
-    for fname in os.listdir(data_folder):
-        if fname.endswith(".npy"):
-            data = np.load(os.path.join(data_folder, fname), allow_pickle=True).item()
-            X_all.append(data["features"])
-            y_all.append(data["labels"])
-            subjects += [data["subject_id"]] * len(data["labels"])
-    X_all = np.vstack(X_all)
-    y_all = np.concatenate(y_all)
-    subjects = np.array(subjects)
-    return X_all, y_all, subjects
+from utils.utils import load_subjects_features, save_figure, save_model, save_classification_report, get_all_subjects_folders
+from utils import config as cfg
+from utils.utils_plot import plot_confusion_matrix, plot_cv_accuracy, plot_cv_loss
+from preprocessing.prep_mne import ensure_preprocessed_subjects
 
 # === Cross-validated training ===
-def cross_validate_classifier(X, y, n_splits=5, random_state=42, output_dir="cv_results"):
-    os.makedirs(output_dir, exist_ok=True)
-
+def cross_validate_classifier(X, y, n_splits=5, random_state=42, output_dir=cfg.OUTPUT_DIR):
+    
     skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
     acc_scores, train_losses, val_losses = [], [], []
+    best_acc = -1
+    best_model = None
+    best_scaler = None
 
     for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
         X_train, X_val = X[train_idx], X[val_idx]
@@ -54,62 +43,47 @@ def cross_validate_classifier(X, y, n_splits=5, random_state=42, output_dir="cv_
         train_losses.append(train_loss)
         val_losses.append(val_loss)
 
-        # Confusion matrix
-        cm = confusion_matrix(y_val, y_pred)
-        plt.figure(figsize=(5, 4))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=[0,1], yticklabels=[0,1])
-        plt.title(f"Fold {fold} — Confusion Matrix")
-        plt.xlabel("Predicted")
-        plt.ylabel("True")
-        plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f"confusion_matrix_fold{fold}.png"))
-        plt.close()
+        if acc > best_acc:
+            best_acc = acc
+            best_model = clf
+            best_scaler = scaler
 
+        # Confusion matrix
+        confusion_matrix = plot_confusion_matrix(y_val, y_pred, class_labels=[0, 1], title=f"Fold {fold} Confusion Matrix")
+        save_figure(confusion_matrix, os.path.join(output_dir, f"confusion_matrix_fold{fold}.png"))
         # Report
         report = classification_report(y_val, y_pred, digits=3)
         print(report)
-        with open(os.path.join(output_dir, f"report_fold{fold}.txt"), "w") as f:
-            f.write(report)
+        save_classification_report(report, fold)
 
         print(f"✅ Fold {fold} — Accuracy: {acc:.3f}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
 
     # Plot accuracy per fold
-    plt.figure(figsize=(6, 4))
-    plt.plot(acc_scores, marker='o', label="Validation Accuracy")
-    plt.axhline(np.mean(acc_scores), linestyle='--', color='gray', label='Mean Accuracy')
-    plt.title("Cross-Validation Accuracy per Fold")
-    plt.xlabel("Fold")
-    plt.ylabel("Accuracy")
-    plt.ylim(0, 1)
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, "cv_accuracy_plot.png"))
-    plt.close()
+    cross_val_acc = plot_cv_accuracy(acc_scores)
+    save_figure(cross_val_acc, os.path.join(output_dir, "cv_accuracy_plot.png"))
 
-    # Plot loss per fold
-    plt.figure(figsize=(6, 4))
-    plt.plot(train_losses, marker='o', label="Train Loss")
-    plt.plot(val_losses, marker='s', label="Val Loss")
-    plt.title("Cross-Validation Loss per Fold")
-    plt.xlabel("Fold")
-    plt.ylabel("Log Loss")
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, "cv_loss_plot.png"))
-    plt.close()
+    cross_val_loss = plot_cv_loss(train_losses, val_losses)
+    save_figure(cross_val_loss, os.path.join(output_dir, "cv_loss_plot.png"))
+
+    save_model(best_model, best_scaler)   
 
     return acc_scores, train_losses, val_losses
 
 # Run
-print(f"\n🔍 Loading preprocessed dataset from folder")
-X, y, subjects = load_all_preprocessed_features()
-print(f"✅ Loaded {len(X)} samples from {len(np.unique(subjects))} subjects")
-print("Starting cross-validation...")
-acc_scores, train_losses, val_losses = cross_validate_classifier(X, y)
-mean_acc = np.mean(acc_scores)
-std_acc = np.std(acc_scores)
+# === Example Batch Processing ===
+if __name__ == "__main__":
 
-print(f"Training completed! - Accuracy: {mean_acc * 100:.2f}% ±: {std_acc * 100:.2f}%")
+    print("🔍 Checking for preprocessed subjects...")
+    subject_folders = get_all_subjects_folders(cfg.DATA_DIR)
+    ensure_preprocessed_subjects(subject_folders)
 
+    print("🔍 Loading preprocessed dataset from folder")
+    features, labels, subjects = load_subjects_features()
+    print(f"✅ Loaded {len(features)} samples from {len(np.unique(subjects))} subjects")
+
+    print("Starting cross-validation...")
+    acc_scores, train_losses, val_losses = cross_validate_classifier(features, labels)
+    mean_acc = np.mean(acc_scores)
+    std_acc = np.std(acc_scores)
+
+    print(f"✅Training completed! - Accuracy: {mean_acc * 100:.2f}% ±: {std_acc * 100:.2f}%")

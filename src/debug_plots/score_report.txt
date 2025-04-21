@@ -1,0 +1,196 @@
+
+📁 Subject: debug_plots\01m09042025e
+❌ Artifact Score: Bad
+🔍 Reasons:
+  - Cz has excessive amplitude range (1102.0 µV)
+  - C3 has excessive amplitude range (1089.2 µV)
+  - C4 has excessive amplitude range (1017.0 µV)
+  - Cz has high kurtosis (1096.3)
+  - Cz has skewed distribution (skew = 14.1)
+  - C3 has high kurtosis (8.1)
+  - C4 has high kurtosis (105.9)
+  - C4 has skewed distribution (skew = 2.6)
+
+
+📁 Subject: debug_plots\02m09042025l
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - C3 has excessive amplitude range (216.2 µV)
+  - Cz has high kurtosis (12.9)
+  - C3 has high kurtosis (12.0)
+
+
+📁 Subject: debug_plots\03m09042025l
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - C3 has excessive amplitude range (218.6 µV)
+  - C3 has high kurtosis (8.3)
+
+
+📁 Subject: debug_plots\04m09042025o
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - C3 has excessive amplitude range (207.7 µV)
+  - C4 has skewed distribution (skew = 1.8)
+
+
+📁 Subject: debug_plots\05m09042025n
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - C3 has excessive amplitude range (214.8 µV)
+
+
+📁 Subject: debug_plots\06m09042025l
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - Cz has excessive amplitude range (104.5 µV)
+  - C3 has excessive amplitude range (212.3 µV)
+  - C4 has excessive amplitude range (114.3 µV)
+
+
+📁 Subject: debug_plots\07m09042025l
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - C3 has excessive amplitude range (203.4 µV)
+  - C3 has high kurtosis (20.6)
+  - C3 has skewed distribution (skew = -1.9)
+
+
+📁 Subject: debug_plots\08m09042025e
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - C3 has excessive amplitude range (200.2 µV)
+  - C3 has high kurtosis (44.2)
+
+
+📁 Subject: debug_plots\09m09042025e
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - C3 has excessive amplitude range (217.6 µV)
+
+
+📁 Subject: debug_plots\10m09042025e
+❌ Artifact Score: Bad
+🔍 Reasons:
+  - C3 has excessive amplitude range (209.3 µV)
+  - C3 has high kurtosis (89.2)
+  - C3 has skewed distribution (skew = -1.5)
+  - C4 has skewed distribution (skew = -1.7)
+
+
+📁 Subject: debug_plots\11m09042025l
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - Very high inter-channel correlation (max = 0.95)
+  - C3 has excessive amplitude range (136.6 µV)
+  - C4 has excessive amplitude range (107.5 µV)
+
+
+📁 Subject: debug_plots\12m09042025l
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - Very high inter-channel correlation (max = 0.98)
+
+
+📁 Subject: debug_plots\13m09042025l
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - Very high inter-channel correlation (max = 0.97)
+
+
+📁 Subject: debug_plots\14m09042025e
+❌ Artifact Score: Bad
+🔍 Reasons:
+  - Cz has high kurtosis (8.1)
+  - Cz has skewed distribution (skew = 2.4)
+  - C3 has high kurtosis (18.7)
+  - C3 has skewed distribution (skew = -2.7)
+
+
+📁 Subject: debug_plots\15m09042025e
+✅ Artifact Score: Good
+
+
+📁 Subject: debug_plots\16z14042025l
+❌ Artifact Score: Bad
+🔍 Reasons:
+  - Very high inter-channel correlation (max = 0.99)
+  - C3 has excessive amplitude range (233.4 µV)
+  - C4 has excessive amplitude range (4110.0 µV)
+  - C4 has high kurtosis (6090.8)
+  - C4 has skewed distribution (skew = 29.7)
+
+
+📁 Subject: debug_plots\17z14042025e
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - Very high inter-channel correlation (max = 0.99)
+  - C4 has excessive amplitude range (168.7 µV)
+
+
+📁 Subject: debug_plots\18z14042025l
+❌ Artifact Score: Bad
+🔍 Reasons:
+  - Very high inter-channel correlation (max = 0.93)
+  - Cz has excessive amplitude range (4232.6 µV)
+  - C3 has excessive amplitude range (8140.0 µV)
+  - C4 has excessive amplitude range (4629.0 µV)
+  - Cz has high kurtosis (303.3)
+  - Cz has skewed distribution (skew = -17.3)
+  - C3 has high kurtosis (280.2)
+  - C3 has skewed distribution (skew = 6.7)
+  - C4 has high kurtosis (285.2)
+  - C4 has skewed distribution (skew = -16.8)
+
+
+📁 Subject: debug_plots\19m14042025l
+❌ Artifact Score: Bad
+🔍 Reasons:
+  - Very high inter-channel correlation (max = 0.99)
+  - Cz has excessive amplitude range (4251.2 µV)
+  - C3 has excessive amplitude range (3701.2 µV)
+  - C4 has excessive amplitude range (4326.8 µV)
+  - Cz has high kurtosis (750.4)
+  - Cz has skewed distribution (skew = -6.3)
+  - C3 has high kurtosis (51698.0)
+  - C3 has skewed distribution (skew = 152.1)
+  - C4 has high kurtosis (2053.2)
+  - C4 has skewed distribution (skew = -13.5)
+
+
+📁 Subject: debug_plots\20m14042025l
+❌ Artifact Score: Bad
+🔍 Reasons:
+  - Cz has excessive amplitude range (438.9 µV)
+  - C3 has excessive amplitude range (604.7 µV)
+  - C4 has excessive amplitude range (4458.3 µV)
+  - C4 has high kurtosis (3005.6)
+  - C4 has skewed distribution (skew = 17.7)
+
+
+📁 Subject: debug_plots\21m14042025l
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - C3 has excessive amplitude range (461.4 µV)
+  - C4 has excessive amplitude range (417.2 µV)
+
+
+📁 Subject: debug_plots\22m14042025e
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - Very high inter-channel correlation (max = 0.99)
+  - C3 has excessive amplitude range (135.4 µV)
+  - C4 has excessive amplitude range (129.3 µV)
+
+
+📁 Subject: debug_plots\23m14042025l
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - Very high inter-channel correlation (max = 0.97)
+
+
+📁 Subject: debug_plots\24m14042025e
+⚠️ Artifact Score: Suspicious
+🔍 Reasons:
+  - C3 has excessive amplitude range (208.1 µV)
+  - C4 has excessive amplitude range (138.6 µV)
