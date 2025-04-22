@@ -238,6 +238,10 @@ def preprocess_eeg_for_cnn(eeg_data_uV, sfreq):
     # 1. High-pass to remove slow drift
     eeg_data = highpass_filter(eeg_data_uV, sfreq, cutoff=0.5)
 
+     # Step 3: Bandpass filter 8–22 Hz
+    b_band, a_band = signal.butter(4, [8.0 / (0.5 * sfreq), 22.0 / (0.5 * sfreq)], btype='band')
+    eeg_data = signal.filtfilt(b_band, a_band, eeg_data, axis=0)
+
     # 2. Apply CAR
     eeg_data = apply_car(eeg_data)
 

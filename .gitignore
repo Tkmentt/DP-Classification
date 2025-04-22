@@ -188,8 +188,11 @@ fabric.properties
 thesis/sources
 data
 dataALL
+dataGOOD
+dataME
 trained_models
 preprocessed_data
+preprocessed_raw_data
 logs
 images
 usefull_links.txt
