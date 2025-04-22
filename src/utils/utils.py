@@ -1,5 +1,4 @@
 import os
-import pickle
 import numpy as np
 import joblib
 import matplotlib.pyplot as plt
@@ -72,20 +71,18 @@ def load_eeg_from_txt(filepath):
     data = np.genfromtxt(filepath, delimiter=',', comments='%')
     data = data[~np.isnan(data[:, -3])]  # Remove NaNs near EEG columns
     eeg_raw = data[:, :3]
-    return eeg_raw
+    return eeg_raw, data
 
 
-def save_pickle(obj, filepath):
-    """Save Python object using pickle."""
-    with open(filepath, 'wb') as f:
-        pickle.dump(obj, f)
 
+def save_subject_data_raw(path, windows, labels):
+    np.save(path, {"windows": windows, "labels": labels})
+    print(f"💾 Caching windows to {path}")
 
-def load_pickle(filepath):
-    """Load Python object from pickle."""
-    with open(filepath, 'rb') as f:
-        return pickle.load(f)
-
+def load_subject_data_raw(path):
+    
+    cached = np.load(path, allow_pickle=True).item()
+    return cached["windows"], cached["labels"]
 
 def save_subject_features(features, labels, subject_folder):
     """
@@ -122,6 +119,15 @@ def load_subjects_features(data_folder=cfg.PREPROCESSED_DIR):
     y_all = np.concatenate(y_all)
     subjects = np.array(subjects)
     return X_all, y_all, subjects
+
+
+def save_raw_model(model, model_dir=cfg.MODEL_DIR):
+    
+    ensure_dir(model_dir)
+    model_path = os.path.join(model_dir, "model_raw.h5")
+    model.save(model_path)
+    print(f"💾 Saving model to {model_path}")
+
 
 
 def save_model(model, scaler, model_dir=cfg.MODEL_DIR):

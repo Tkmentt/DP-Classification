@@ -190,6 +190,7 @@ data
 dataALL
 dataGOOD
 dataME
+outputs
 trained_models
 preprocessed_data
 preprocessed_raw_data

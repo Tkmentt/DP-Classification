@@ -91,15 +91,15 @@ def preprocess_subject(subject_folder):
 
     eeg_path, label_path = get_subject_data(subject_folder)
     
-    eeg = load_eeg_from_txt(eeg_path)
+    eeg, data = load_eeg_from_txt(eeg_path)
     eeg = convert_to_microvolts(eeg)
     raw = convert_to_raw(eeg)
     raw.notch_filter(cfg.NOTCH_TRESHOLD)
     raw.filter(1., cfg.HIGH_BAND_THRESHOLD)
 
+    timestamps_raw = data[:, -3]
+    timestamps = [datetime.datetime.fromtimestamp(ts) for ts in timestamps_raw]
     intervals = parse_marker_file(label_path)
-    start_time = intervals[0]['start'] if intervals else datetime.datetime.now()
-    timestamps = [start_time + datetime.timedelta(seconds=i/cfg.FS) for i in range(eeg.shape[0])]
 
     #visualize_raw(raw, os.path.basename(subject_folder))
 

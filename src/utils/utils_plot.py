@@ -7,7 +7,7 @@ from utils import config
 
 def plot_confusion_matrix(y_true, y_pred, class_labels, title="Confusion Matrix", normalize=False, cmap="Blues"):
     
-    print(f"📈Plotting {title}")
+    print(f"📈 Plotting {title}")
     
     cm = confusion_matrix(y_true, y_pred)
     if normalize:
@@ -34,7 +34,7 @@ def plot_cv_loss(train_losses, val_losses, title="Cross-Validation Loss per Fold
     Returns:
     - matplotlib Figure object
     """
-    print(f"📈Plotting {title}")
+    print(f"📈 Plotting {title}")
 
     plt.figure(figsize=(6, 4))
     plt.plot(train_losses, marker='o', label="Train Loss")
@@ -59,7 +59,7 @@ def plot_cv_accuracy(acc_scores, title="Cross-Validation Accuracy per Fold"):
     Returns:
     - matplotlib Figure object
     """
-    print(f"📈Plotting {title}")
+    print(f"📈 Plotting {title}")
 
     plt.figure(figsize=(6, 4))
     plt.plot(acc_scores, marker='o', label="Validation Accuracy")
@@ -76,7 +76,7 @@ def plot_cv_accuracy(acc_scores, title="Cross-Validation Accuracy per Fold"):
 
 def plot_raw_eeg(signal, fs=config.FS, title="EEG Signal", channel_names=config.CHANNELS):
 
-    print(f"📈Plotting {title}")
+    print(f"📈 Plotting {title}")
 
     plt.figure(figsize=(12, 6))
     time = np.arange(signal.shape[1]) / fs
@@ -105,7 +105,7 @@ def plot_multichannel_psd(eeg, fs=config.FS, channel_names=config.CHANNELS, subj
     - matplotlib Figure object
     """
 
-    print(f"📈Plotting PSD — {subject_title}")
+    print(f"📈 Plotting PSD — {subject_title}")
 
     plt.figure(figsize=(10, 5))
     for ch_idx, name in enumerate(channel_names):
@@ -161,7 +161,7 @@ def plot_random_raw_windows(eeg, channel_names=config.CHANNELS, subject_title="R
     Returns:
     - List of matplotlib Figure objects
     """
-    print(f"📈Plotting {n_windows} random raw EEG windows — {subject_title}")
+    print(f"📈 Plotting {n_windows} random raw EEG windows — {subject_title}")
     
     figures = []
     for idx in range(n_windows):
@@ -196,7 +196,7 @@ def plot_psd_comparison_per_channel(raw_eeg, filtered_eegs, labels, fs=config.FS
     Returns:
     - List of matplotlib Figure objects
     """
-    print(f"📈Plotting PSD Comparison — {subject_title}")
+    print(f"📈 Plotting PSD Comparison — {subject_title}")
 
     figures = []
     for i, name in enumerate(channel_names):
@@ -230,7 +230,7 @@ def plot_amplitude_histogram_comparison_per_channel(raw_eeg, filtered_eegs, labe
     Returns:
     - List of matplotlib Figure objects
     """
-    print(f"📈Plotting Amplitude Histogram Comparison — {subject_title}")
+    print(f"📈 Plotting Amplitude Histogram Comparison — {subject_title}")
 
     figures = []
     for i, name in enumerate(channel_names):

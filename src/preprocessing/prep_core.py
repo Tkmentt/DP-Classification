@@ -235,7 +235,7 @@ def preprocess_eeg_for_cnn(eeg_data_uV, sfreq):
     - High-pass filter (0.5 Hz)
     - Common average referencing
     """
-    # 1. High-pass to remove slow drift
+    # 1. High-pass to remove slow drift*
     eeg_data = highpass_filter(eeg_data_uV, sfreq, cutoff=0.5)
 
      # Step 3: Bandpass filter 8–22 Hz
@@ -289,6 +289,7 @@ def generate_sliding_windows_decay(eeg_data, timestamps, intervals, raw=False, w
     windows = []
     labels = []
 
+    ################  Set this to 0.5 for S5 and S6 if want to used decayed labels ################
     decay_s5 = 1  # After 4 seconds, S5 becomes 0.5
     decay_s6 = 0  # First 4 seconds of S6 are 0.5, rest are 0
 

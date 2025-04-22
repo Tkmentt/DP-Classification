@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from preprocessing.prep_core import parse_marker_file, generate_dual_windows
 from classification.keras.CNN import build_cnn_model, get_lr_scheduler, get_early_stopping
 from classification.keras.MLP import build_mlp_model
-from preprocessing.prep_core import compute_csp, extract_features, balance_classes, print_class_balance
+from preprocessing.prep_core import compute_csp, extract_features, balance_classes_dual, print_class_balance
 import datetime
 import os
 import joblib
@@ -65,10 +65,10 @@ def load_full_dataset(data_folder):
         print("Label summary before balancing:")
         print("Unique labels:", np.unique(labels))
         print("Soft label count (0.5):", np.sum(labels == 0.5))
-        windows, labels = balance_classes(windows, labels, method='oversample')
+        #windows, labels = balance_classes(windows, labels, method='oversample')
 
         # === Balance using consistent indices
-        balanced_idx = balance_classes(labels, return_indices=True)
+        balanced_idx = balance_classes_dual(labels, return_indices=True)
 
         raw_windows = raw_windows[balanced_idx]
         feature_windows = feature_windows[balanced_idx]
@@ -103,13 +103,10 @@ def load_full_dataset(data_folder):
 
     return combined_raw, combined_feat, combined_labels, combined_group_ids
 
-
-
-
 ################################################################################################
 
 # === Load the raw windows and labels ===
-windows, labels, group_ids = load_full_dataset('data')
+windows, features_raw, labels, group_ids = load_full_dataset('data')
 
 
 # === Filter for hard labels before CSP ===
@@ -122,7 +119,7 @@ csp_filters = compute_csp(windows_hard, labels_hard, n_components=6)
 
 # === Extract features from CLEANED RAW ===
 print("🧪 Extracting feature vectors...")
-features = extract_features(windows, csp_filters=csp_filters)
+features = extract_features(features_raw, csp_filters=csp_filters)
 
 print(f"✅ Feature shape: {features.shape}")
 print(f"🔍 Example feature vector: {features[0]}")

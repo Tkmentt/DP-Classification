@@ -33,6 +33,8 @@ SCORE_REPORT_FILE = 'score_report.txt'  # Score report file name
 # Directory defaults (can be overridden in scripts)
 DATA_DIR = 'dataALL'
 PREPROCESSED_DIR = 'preprocessed_data'
+PREPROCESSED_RAW_DIR = 'preprocessed_raw_data'
 DEBUG_DIR = 'debug_plots'
 OUTPUT_DIR = "outputs"
+OUTPUT_RAW_DIR = "outputs_raw"
 MODEL_DIR = "models"
