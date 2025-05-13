@@ -4,10 +4,11 @@ from sklearn.model_selection import GroupKFold, StratifiedKFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, accuracy_score, log_loss
 from sklearn.neural_network import MLPClassifier
-from utils.utils import load_subjects_features, save_figure, save_model, save_classification_report, get_all_subjects_folders, get_plot_theme
+from utils.utils import load_subjects_features, save_figure, save_model, save_classification_report, get_all_subjects_folders, get_plot_theme, ensure_dir
 from utils import config as cfg
 from utils.utils_plot import plot_confusion_matrix, plot_cv_accuracy, plot_cv_loss, plot_aggregated_confusion_matrix
 from joblib import dump
+from preprocessing.prep_mne import preprocess_subject, is_subject_preprocessed
 
 def cross_validate_classifier(X, y, groups=None, use_group_kfold=True,
                               n_splits=cfg.KFOLD_SPLITS, random_state=42,
@@ -133,8 +134,6 @@ if __name__ == "__main__":
 
     print("🔍 Checking for preprocessed subjects...")
     subject_folders = get_all_subjects_folders(cfg.DATA_DIR)
-    
-    from preprocessing.prep_mne import preprocess_subject, is_subject_preprocessed
 
     all_csp_filters = []
 
@@ -153,6 +152,7 @@ if __name__ == "__main__":
 
     if all_csp_filters:
         avg_csp = np.mean(np.stack(all_csp_filters), axis=0)
+        ensure_dir(cfg.MODEL_DIR)
         dump(avg_csp, os.path.join(cfg.MODEL_DIR, "csp_filters.pkl"))
         print(f"💾 Saved average CSP filters: shape {avg_csp.shape}")
 
