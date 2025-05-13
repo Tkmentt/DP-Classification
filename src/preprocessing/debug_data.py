@@ -115,10 +115,7 @@ def process_subject(subject_folder):
     ensure_dir(config.DEBUG_DIR)
 
     print(f"\n📁 Processing subject: {subject_folder}")
-    eeg_raw = load_eeg_from_txt(data_path, channel_idx=config.CHANNEL_IDX)
-
-    # === Raw ADC stats ===
-    print(f"🔢 Raw counts: min={np.min(eeg_raw)}, max={np.max(eeg_raw)}")
+    eeg_raw, data = load_eeg_from_txt(data_path, channel_idx=config.CHANNEL_IDX)
 
     # === Convert to microvolts based on OpenBCI gain
     eeg = convert_to_microvolts(eeg_raw)

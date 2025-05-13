@@ -24,7 +24,7 @@ and unzip the folder from the downloaded zip file. Change your current directory
 cd DP-Classification-main
 ```
 
-Download the dataset from https://zenodo.org/record/7893847
+Download the dataset from https://zenodo.org/records/7893847
 and unzip it in the working directory to a folder named **data**.
 
 ### Conda
