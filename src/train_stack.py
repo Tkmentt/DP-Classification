@@ -106,7 +106,7 @@ def load_full_dataset(data_folder):
 ################################################################################################
 
 # === Load the raw windows and labels ===
-windows, features_raw, labels, group_ids = load_full_dataset('data')
+windows, features_raw, labels, group_ids = load_full_dataset('dataALL')
 
 
 # === Filter for hard labels before CSP ===
@@ -126,7 +126,7 @@ print(f"🔍 Example feature vector: {features[0]}")
 
 
 # === Prepare outer GroupKFold ===
-n_outer_folds = 3
+n_outer_folds = 5
 gkf = GroupKFold(n_splits=n_outer_folds)
 folds = list(gkf.split(windows, labels, groups=group_ids))
 
@@ -225,7 +225,7 @@ print("\n📊 Final Meta-Classifier Evaluation:")
 print(classification_report(true_hard_labels, preds_hard, digits=3))
 
 cm = confusion_matrix(true_hard_labels, preds_hard)
-sns.heatmap(cm, annot=True, fmt='d', cmap='Purples')
+sns.heatmap(cm, annot=True, fmt='d', cmap='Greens')
 plt.title("Final Stacked Confusion Matrix (All Folds)")
 plt.xlabel("Predicted")
 plt.ylabel("True")

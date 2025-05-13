@@ -63,7 +63,7 @@ def parse_marker_file(marker_file_path):
     return intervals
 
 
-def is_artifact_free_mne(window, motor_threshold=100, min_std=0.1, max_z=10, verbose=False):  
+def is_artifact_free_mne(window, motor_threshold=150, min_std=0.03, max_z=10, verbose=False):  
     """
     Real-time-safe artifact rejection:
     - Peak-to-peak (amplitude burst)
@@ -238,14 +238,12 @@ def preprocess_eeg_for_cnn(eeg_data_uV, sfreq):
     # 1. High-pass to remove slow drift*
     eeg_data = highpass_filter(eeg_data_uV, sfreq, cutoff=0.5)
 
-     # Step 3: Bandpass filter 8–22 Hz
-    b_band, a_band = signal.butter(4, [8.0 / (0.5 * sfreq), 22.0 / (0.5 * sfreq)], btype='band')
+     # Step 3: Bandpass filter 8-30 Hz
+    b_band, a_band = signal.butter(4, [cfg.LOW_BAND_THRESHOLD / (0.5 * sfreq), cfg.HIGH_BAND_THRESHOLD / (0.5 * sfreq)], btype='band')
     eeg_data = signal.filtfilt(b_band, a_band, eeg_data, axis=0)
 
     # 2. Apply CAR
     eeg_data = apply_car(eeg_data)
-
-    # ⚠️ Do NOT apply z-score or bandpass here
 
     return eeg_data
 
@@ -255,11 +253,11 @@ def preprocess_eeg(eeg_data, sfreq):
     eeg_data = clip_extremes(eeg_data, clip_val=100)
 
     # Step 2: Notch filter at 50 Hz
-    b_notch, a_notch = signal.iirnotch(50.0, 30.0, fs=sfreq)
+    b_notch, a_notch = signal.iirnotch(cfg.NOTCH_TRESHOLD, 30.0, fs=sfreq)
     eeg_data = signal.filtfilt(b_notch, a_notch, eeg_data, axis=0)
 
     # Step 3: Bandpass filter 8–22 Hz
-    b_band, a_band = signal.butter(4, [8.0 / (0.5 * sfreq), 22.0 / (0.5 * sfreq)], btype='band')
+    b_band, a_band = signal.butter(4, [cfg.LOW_BAND_THRESHOLD / (0.5 * sfreq), cfg.HIGH_BAND_THRESHOLD / (0.5 * sfreq)], btype='band')
     eeg_data = signal.filtfilt(b_band, a_band, eeg_data, axis=0)
 
     # Step 4: Common average reference (CAR)

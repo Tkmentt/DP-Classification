@@ -70,7 +70,7 @@ def load_eeg_from_txt(filepath):
     """
     data = np.genfromtxt(filepath, delimiter=',', comments='%')
     data = data[~np.isnan(data[:, -3])]  # Remove NaNs near EEG columns
-    eeg_raw = data[:, :3]
+    eeg_raw = data[:, cfg.CHANNEL_IDX]
     return eeg_raw, data
 
 
@@ -188,16 +188,47 @@ def save_text_report(log_lines, filepath):
         f.write("\n\n".join(log_lines))
 
 
-def save_classification_report(report, fold, output_dir=cfg.OUTPUT_DIR):
+def save_classification_report(report, fold, output_dir=cfg.OUTPUT_DIR, prefix=None):
     """
     Save classification report to a text file.
 
     Parameters:
     - report: str, classification report
-    - filepath: str, path to save the report
+    - fold: int, fold index
+    - output_dir: directory to save to
+    - prefix: optional filename prefix (e.g., 'mne_gkf')
     """
     ensure_dir(output_dir)
-    report_path = os.path.join(output_dir, f"report_fold{fold}.txt")
+    filename = f"{prefix + '_' if prefix else ''}report_fold{fold}.txt"
+    report_path = os.path.join(output_dir, filename)
     print(f"💾 Saving classification report to {report_path}")
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(report)
+
+
+
+def get_plot_theme(data_type, folding_type):
+    """
+    Determine colormap and line color based on data and fold type.
+
+    Parameters:
+    - data_type: str, either "MNE" or "RAW"
+    - folding_type: str, either "GroupKFold" or "StratifiedKFold"
+
+    Returns:
+    - dict with keys: 'cmap', 'line_color', 'prefix'
+    """
+    assert data_type in ["MNE", "RAW"]
+    assert folding_type in ["GroupKFold", "StratifiedKFold"]
+
+    if data_type == "MNE":
+        if folding_type == "GroupKFold":
+            return {"cmap": "Blues", "line_color": "navy", "prefix": "mne_gkf"}
+        else:
+            return {"cmap": "Purples", "line_color": "indigo", "prefix": "mne_skf"}
+    else:  # RAW
+        if folding_type == "GroupKFold":
+            return {"cmap": "Reds", "line_color": "darkred", "prefix": "raw_gkf"}
+        else:
+            return {"cmap": "Oranges", "line_color": "orangered", "prefix": "raw_skf"}
+

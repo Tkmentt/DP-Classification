@@ -9,21 +9,29 @@ from utils import config as cfg
 from preprocessing.prep_core import is_artifact_free_mne, parse_marker_file, extract_features, compute_csp
 from utils.utils import load_eeg_from_txt,convert_to_microvolts,save_subject_features, get_subject_data, is_subject_preprocessed
 
-def balance_windows(windows, labels):
-    class_0 = windows[labels == 0]
-    class_1 = windows[labels == 1]
 
+def balance_windows(windows, labels):
+    # Separate windows by class
+    class_0 = windows[labels == 0]  # Windows belonging to class 0
+    class_1 = windows[labels == 1]  # Windows belonging to class 1
+
+    # Determine which class is smaller and upsample it to match the larger class
     if len(class_0) < len(class_1):
+        # Upsample class 0 to match class 1
         class_0_upsampled = resample(class_0, replace=True, n_samples=len(class_1), random_state=42)
-        labels_0 = np.zeros(len(class_1))
+        labels_0 = np.zeros(len(class_1))  # Label array for upsampled class 0
+        # Combine upsampled class 0 with class 1
         windows_balanced = np.vstack([class_0_upsampled, class_1])
         labels_balanced = np.concatenate([labels_0, np.ones(len(class_1))])
     else:
+        # Upsample class 1 to match class 0
         class_1_upsampled = resample(class_1, replace=True, n_samples=len(class_0), random_state=42)
-        labels_1 = np.ones(len(class_0))
+        labels_1 = np.ones(len(class_0))  # Label array for upsampled class 1
+        # Combine class 0 with upsampled class 1
         windows_balanced = np.vstack([class_0, class_1_upsampled])
         labels_balanced = np.concatenate([np.zeros(len(class_0)), labels_1])
 
+    # Return the balanced dataset
     return windows_balanced, labels_balanced
 
 # === EEG to RawArray ===
@@ -93,6 +101,7 @@ def preprocess_subject(subject_folder):
     
     eeg, data = load_eeg_from_txt(eeg_path)
     eeg = convert_to_microvolts(eeg)
+    print("Min/max raw values:", np.min(eeg, axis=0), np.max(eeg, axis=0))
     raw = convert_to_raw(eeg)
     raw.notch_filter(cfg.NOTCH_TRESHOLD)
     raw.filter(1., cfg.HIGH_BAND_THRESHOLD)
@@ -104,6 +113,9 @@ def preprocess_subject(subject_folder):
     #visualize_raw(raw, os.path.basename(subject_folder))
 
     eeg_filtered = raw.get_data().T
+    print("Min/max filtered values:", np.min(eeg_filtered, axis=0), np.max(eeg_filtered, axis=0))
+
+
     windows, labels = generate_sliding_windows(eeg_filtered, timestamps, intervals, sfreq=cfg.FS)
     windows, labels = balance_windows(windows, labels)
     
@@ -111,6 +123,8 @@ def preprocess_subject(subject_folder):
     features = extract_features(windows, sfreq=cfg.FS, csp_filters=csp_filters)
 
     save_subject_features(features, labels, subject_folder)
+
+    return csp_filters
 
 
 def ensure_preprocessed_subjects(subject_folders):

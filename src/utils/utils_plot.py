@@ -21,57 +21,88 @@ def plot_confusion_matrix(y_true, y_pred, class_labels, title="Confusion Matrix"
     plt.tight_layout()
     return plt.gcf()
 
-
-def plot_cv_loss(train_losses, val_losses, title="Cross-Validation Loss per Fold"):
+def plot_aggregated_confusion_matrix(y_trues, y_preds, class_labels=None, normalize=False, title="Aggregated Confusion Matrix", cmap="Blues"):
     """
-    Plot training and validation loss per fold.
+    Compute and plot the aggregated confusion matrix from multiple folds.
 
     Parameters:
-    - train_losses: list of float
-    - val_losses: list of float
+    - y_trues: list of np.ndarray – true labels from each fold
+    - y_preds: list of np.ndarray – predicted labels from each fold
+    - class_labels: list of class labels for axis tick marks
+    - normalize: whether to normalize the matrix row-wise
     - title: plot title
+    - cmap: matplotlib colormap for heatmap
 
     Returns:
-    - matplotlib Figure object
+    - matplotlib Figure object with the aggregated confusion matrix
+    - the raw (non-normalized) confusion matrix as np.ndarray
     """
+    print(f"📈 Plotting {'Normalized ' if normalize else ''}Aggregated Confusion Matrix")
+
+    assert len(y_trues) == len(y_preds), "y_trues and y_preds must have the same number of folds"
+
+    # Initialize confusion matrix
+    n_classes = len(class_labels) if class_labels else len(np.unique(np.concatenate(y_trues)))
+    aggregate_cm = np.zeros((n_classes, n_classes), dtype=int)
+
+    for y_true, y_pred in zip(y_trues, y_preds):
+        cm = confusion_matrix(y_true, y_pred, labels=range(n_classes))
+        aggregate_cm += cm
+
+    # Normalize if requested
+    if normalize:
+        cm_to_plot = aggregate_cm.astype(float)
+        row_sums = cm_to_plot.sum(axis=1, keepdims=True)
+        cm_to_plot = np.divide(cm_to_plot, row_sums, where=row_sums != 0)
+    else:
+        cm_to_plot = aggregate_cm
+
+    # Plot
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm_to_plot, annot=True, fmt=".2f" if normalize else "d", cmap=cmap,
+                xticklabels=class_labels, yticklabels=class_labels)
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title(title)
+    plt.tight_layout()
+    return plt.gcf(), aggregate_cm
+
+
+def plot_cv_accuracy(acc_scores, title="Cross-Validation Accuracy per Fold", color="tab:blue"):
     print(f"📈 Plotting {title}")
+    acc_percent = np.array(acc_scores) * 100
+    folds = np.arange(1, len(acc_scores) + 1)
 
     plt.figure(figsize=(6, 4))
-    plt.plot(train_losses, marker='o', label="Train Loss")
-    plt.plot(val_losses, marker='s', label="Val Loss")
+    plt.plot(folds, acc_percent, marker='o', label="Validation Accuracy", color=color)
+    plt.axhline(np.mean(acc_percent), linestyle='--', color='gray', label='Mean Accuracy')
     plt.title(title)
     plt.xlabel("Fold")
-    plt.ylabel("Log Loss")
+    plt.ylabel("Accuracy (%)")
+    plt.ylim(0, 100)
+    plt.xticks(folds)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     return plt.gcf()
 
 
-def plot_cv_accuracy(acc_scores, title="Cross-Validation Accuracy per Fold"):
-    """
-    Plot accuracy values per fold for cross-validation.
-
-    Parameters:
-    - acc_scores: list or np.ndarray of accuracy values (0–1)
-    - title: plot title
-
-    Returns:
-    - matplotlib Figure object
-    """
+def plot_cv_loss(train_losses, val_losses, title="Cross-Validation Loss per Fold", color="tab:blue"):
     print(f"📈 Plotting {title}")
+    folds = np.arange(1, len(train_losses) + 1)
 
     plt.figure(figsize=(6, 4))
-    plt.plot(acc_scores, marker='o', label="Validation Accuracy")
-    plt.axhline(np.mean(acc_scores), linestyle='--', color='gray', label='Mean Accuracy')
+    plt.plot(folds, train_losses, marker='o', label="Train Loss", color=color)
+    plt.plot(folds, val_losses, marker='s', label="Val Loss", linestyle='--', color=color)
     plt.title(title)
     plt.xlabel("Fold")
-    plt.ylabel("Accuracy")
-    plt.ylim(0, 1)
+    plt.ylabel("Loss")
+    plt.xticks(folds)
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     return plt.gcf()
+
 
 
 def plot_raw_eeg(signal, fs=config.FS, title="EEG Signal", channel_names=config.CHANNELS):

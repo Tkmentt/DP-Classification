@@ -5,15 +5,21 @@ from keras.layers import Conv2D, BatchNormalization, Dropout, AveragePooling2D, 
     Activation, SeparableConv2D, Conv1D, DepthwiseConv1D, SeparableConv1D, AveragePooling1D
 from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping
 
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv1D, BatchNormalization, Activation, AveragePooling1D, Dropout
+from tensorflow.keras.layers import SeparableConv1D, DepthwiseConv1D
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.constraints import max_norm
+
 def build_cnn_model(input_shape, learning_rate=0.001):
     """
-    EEGNet-inspired CNN model for raw EEG classification.
-    Assumes input shape: (time_steps, channels)
+    EEGNet-inspired CNN + LSTM model for raw EEG classification.
+    Input shape: (time_steps, channels)
     """
 
     model = Sequential()
 
-    # Block 1
+    # Block 1: Temporal + spatial filtering
     model.add(Conv1D(filters=8, kernel_size=64, padding='same', input_shape=input_shape))
     model.add(BatchNormalization())
     model.add(DepthwiseConv1D(kernel_size=64, depth_multiplier=2, depthwise_constraint=max_norm(1.)))
@@ -22,19 +28,20 @@ def build_cnn_model(input_shape, learning_rate=0.001):
     model.add(AveragePooling1D(pool_size=4))
     model.add(Dropout(0.5))
 
-    # Block 2
+    # Block 2: Separable convolution
     model.add(SeparableConv1D(filters=16, kernel_size=16, padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
     model.add(AveragePooling1D(pool_size=4))
     model.add(Dropout(0.5))
 
-    # Classification head
-    model.add(Flatten())
-    model.add(Dense(2, activation='softmax'))  # 2 classes (soft labels: [1, 0], [0, 1], or [0.5, 0.5])
-    
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    # NEW: LSTM temporal modeling
+    model.add(LSTM(64, return_sequences=False))  # captures temporal dynamics
 
+    # Classification head
+    model.add(Dense(2, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
 # Learning rate scheduler
