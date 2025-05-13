@@ -36,7 +36,7 @@ LABEL_FILE = 'labels.txt'  # Label file name
 SCORE_REPORT_FILE = 'score_report.txt'  # Score report file name
 
 # Directory defaults
-DATA_DIR = 'dataALL'
+DATA_DIR = 'data'
 PREPROCESSED_DIR = 'preprocessed_data'
 PREPROCESSED_RAW_DIR = 'preprocessed_raw_data'
 DEBUG_DIR = 'debug_plots'
