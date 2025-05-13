@@ -196,6 +196,9 @@ preprocessed_data
 preprocessed_raw_data
 logs
 images
+results
+cv_results
+debug_plots
 usefull_links.txt
 statistics.txt
 *.png
